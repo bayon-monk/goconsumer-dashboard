@@ -813,7 +813,10 @@
     var dbg = document.getElementById('debug');
     function showErr(msg) { dbg.style.display = 'block'; dbg.innerHTML += msg + '<br>'; }
     window.onerror = function(m, s, l, c, e) { showErr('JS ERROR: ' + m + ' (line ' + l + ')'); };
-    window.addEventListener('unhandledrejection', function(e) { showErr('PROMISE: ' + e.reason); });
+    window.addEventListener('unhandledrejection', function(e) {
+      if (e.reason && e.reason.message && e.reason.message.includes('perfromanceMetrics')) return;
+      showErr('PROMISE: ' + e.reason);
+    });
   </script>
 
   <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
@@ -837,7 +840,7 @@
             <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <div style={{ width: "90px", fontSize: "12px", color: "#94A3B8", textAlign: "right", flexShrink: 0 }}>{item.name}</div>
               <div style={{ flex: 1, background: "#0F172A", borderRadius: "6px", height: "28px", position: "relative", overflow: "hidden" }}>
-                <div style={{ width: (item.score / 10 * 100) + "%", height: "100%", background: "linear-gradient(90deg, #3B82F6, #60A5FA)", borderRadius: "6px", transition: "width 0.5s ease" }} />
+                <div style={{ width: (item.score / 10 * 100) + "%", height: "100%", background: item.colour || "#3B82F6", borderRadius: "6px", transition: "width 0.5s ease", opacity: 0.85 }} />
               </div>
               <div style={{ width: "45px", fontSize: "14px", fontWeight: 700, color: "#F1F5F9", textAlign: "right" }}>{item.score.toFixed(1)}</div>
             </div>
@@ -920,6 +923,8 @@
 
     const SCAN_FINDINGS = {
       eramba: {
+        url: "https://www.eramba.org",
+        g2Rating: 4.2,
         integrations: "5-10",
         frameworks: "3-5 core",
         pricing: "€2,500/yr Enterprise",
@@ -929,6 +934,8 @@
         verdict: "Incumbent selected for price, not fit. Critical gaps for fast-moving fintech on AWS."
       },
       vanta: {
+        url: "https://www.vanta.com",
+        g2Rating: 4.6,
         integrations: "300+",
         frameworks: "35+",
         pricing: "$10k–$80k/yr tiered",
@@ -938,6 +945,8 @@
         verdict: "Market leader. Best extensibility via Connectors API."
       },
       drata: {
+        url: "https://drata.com",
+        g2Rating: 4.7,
         integrations: "170+",
         frameworks: "20+",
         pricing: "$7.5k–$50k/yr tiered",
@@ -947,6 +956,8 @@
         verdict: "Strong all-rounder. Excellent continuous monitoring."
       },
       secureframe: {
+        url: "https://secureframe.com",
+        g2Rating: 4.7,
         integrations: "300+",
         frameworks: "Multiple global",
         pricing: "$7.5k base, avg $20.5k/yr",
@@ -956,6 +967,8 @@
         verdict: "Strong contender. EU data residency differentiator."
       },
       sprinto: {
+        url: "https://sprinto.com",
+        g2Rating: 4.8,
         integrations: "300+",
         frameworks: "50+",
         pricing: "$6k–$25k/yr all-inclusive",
@@ -965,6 +978,8 @@
         verdict: "Best value. Excellent for multi-framework scaling."
       },
       thoropass: {
+        url: "https://thoropass.com",
+        g2Rating: 4.5,
         integrations: "100+",
         frameworks: "20+",
         pricing: "$20k–$47k/yr incl. auditors",
@@ -974,6 +989,8 @@
         verdict: "Best for white-glove guidance. Less for self-service teams."
       },
       scrut: {
+        url: "https://www.scrut.io",
+        g2Rating: 4.9,
         integrations: "100+",
         frameworks: "50+",
         pricing: "$5k–$20k/yr custom",
@@ -983,6 +1000,8 @@
         verdict: "Good for simplicity + data privacy. Weaker extensibility."
       },
       hyperproof: {
+        url: "https://hyperproof.io",
+        g2Rating: 4.5,
         integrations: "70+ Hypersyncs",
         frameworks: "120+",
         pricing: "$12k–$100k/yr",
@@ -992,6 +1011,8 @@
         verdict: "Best for enterprise GRC. Higher implementation overhead."
       },
       onetrust: {
+        url: "https://www.onetrust.com",
+        g2Rating: 4.3,
         integrations: "200+",
         frameworks: "Major + custom",
         pricing: "$500–$17.5k per module",
@@ -1001,6 +1022,8 @@
         verdict: "Enterprise-grade but heavy. For large complex orgs."
       },
       "aws-audit": {
+        url: "https://aws.amazon.com/audit-manager/",
+        g2Rating: 4.1,
         integrations: "AWS-only",
         frameworks: "7 pre-built + custom",
         pricing: "~$0.20–$2.00 per assessment",
@@ -1010,6 +1033,8 @@
         verdict: "Essential AWS layer but not standalone."
       },
       prowler: {
+        url: "https://prowler.com",
+        g2Rating: 4.6,
         integrations: "600+ AWS controls",
         frameworks: "10+ (CIS, PCI, SOC 2...)",
         pricing: "Free OSS / $100–$500/mo SaaS",
@@ -1212,8 +1237,8 @@
       };
 
       const handleStatusChange = async (vendorId) => {
-        const statuses = ["Longlist", "Shortlist", "Finalist"];
-        const currentStatus = vendorStatuses[vendorId] || "Longlist";
+        const statuses = ["longlist", "shortlist", "finalist"];
+        const currentStatus = vendorStatuses[vendorId] || "longlist";
         const currentIndex = statuses.indexOf(currentStatus);
         const nextStatus = statuses[(currentIndex + 1) % statuses.length];
 
@@ -1306,8 +1331,8 @@
         return totalWeight > 0 ? Math.round((totalScore / totalWeight) * 10) / 10 : 0;
       };
 
-      const shortlistedVendors = VENDORS.filter(v => vendorStatuses[v.id] === "Shortlist").length;
-      const finalistVendors = VENDORS.filter(v => vendorStatuses[v.id] === "Finalist").length;
+      const shortlistedVendors = VENDORS.filter(v => vendorStatuses[v.id] === "shortlist").length;
+      const finalistVendors = VENDORS.filter(v => vendorStatuses[v.id] === "finalist").length;
 
       if (showEvaluatorModal) {
         return (
@@ -1395,13 +1420,14 @@
 
     // Dashboard Component
     function Dashboard({ shortlistedVendors, finalistVendors, evaluators, vendorStatuses, handleStatusChange, getWeightedScore }) {
-      const longlistVendors = VENDORS.filter(v => vendorStatuses[v.id] !== "Shortlist" && vendorStatuses[v.id] !== "Finalist").length;
-      const shortlistVendors = VENDORS.filter(v => vendorStatuses[v.id] === "Shortlist").length;
-      const finalistVendorsCount = VENDORS.filter(v => vendorStatuses[v.id] === "Finalist").length;
+      const longlistVendors = VENDORS.filter(v => vendorStatuses[v.id] !== "shortlist" && vendorStatuses[v.id] !== "finalist").length;
+      const shortlistVendors = VENDORS.filter(v => vendorStatuses[v.id] === "shortlist").length;
+      const finalistVendorsCount = VENDORS.filter(v => vendorStatuses[v.id] === "finalist").length;
 
       const chartData = VENDORS.map(v => ({
         name: v.name.substring(0, 10),
         score: getWeightedScore(v.id),
+        colour: v.colour,
       })).sort((a, b) => b.score - a.score);
 
       return (
@@ -1428,11 +1454,11 @@
           <div className="pipeline-section">
             <div className="section-title">Vendor Pipeline</div>
             <div className="pipeline">
-              {["Longlist", "Shortlist", "Finalist"].map(stage => (
+              {["longlist", "shortlist", "finalist"].map(stage => (
                 <div key={stage} className="pipeline-stage">
-                  <div className="stage-header">{stage}</div>
+                  <div className="stage-header">{stage.charAt(0).toUpperCase() + stage.slice(1)}</div>
                   <div className="stage-content">
-                    {VENDORS.filter(v => (vendorStatuses[v.id] || "Longlist") === stage).map(vendor => (
+                    {VENDORS.filter(v => (vendorStatuses[v.id] || "longlist") === stage).map(vendor => (
                       <div
                         key={vendor.id}
                         className="vendor-pill"
@@ -1470,9 +1496,22 @@
                 <div>
                   <div className="vendor-name">{vendor.name}</div>
                   <div className="vendor-archetype">{vendor.archetype}</div>
+                  {SCAN_FINDINGS[vendor.id]?.url && (
+                    <a href={SCAN_FINDINGS[vendor.id].url} target="_blank" rel="noopener noreferrer"
+                       style={{ color: "#3B82F6", fontSize: "12px", textDecoration: "none", display: "block", marginTop: "4px" }}>
+                      {SCAN_FINDINGS[vendor.id].url.replace("https://", "").replace("www.", "")} ↗
+                    </a>
+                  )}
                 </div>
-                <div className={`score-badge ${getScoreColor(SCAN_FINDINGS[vendor.id]?.pricing ? 7 : 5)}`}>
-                  {SCAN_FINDINGS[vendor.id]?.pricing || "N/A"}
+                <div style={{ textAlign: "right" }}>
+                  {SCAN_FINDINGS[vendor.id]?.g2Rating && (
+                    <div style={{ fontSize: "13px", color: "#FACC15", marginBottom: "4px" }}>
+                      {"★".repeat(Math.round(SCAN_FINDINGS[vendor.id].g2Rating))} <span style={{ color: "#94A3B8", fontSize: "12px" }}>{SCAN_FINDINGS[vendor.id].g2Rating} G2</span>
+                    </div>
+                  )}
+                  <div className="score-badge score-amber" style={{ fontSize: "11px" }}>
+                    {SCAN_FINDINGS[vendor.id]?.pricing || "N/A"}
+                  </div>
                 </div>
               </div>
 
@@ -1734,7 +1773,7 @@
 
     // POC Tracker Component
     function POCTracker({ pocProgress, handlePocToggle, vendorStatuses }) {
-      const shortlistedVendors = VENDORS.filter(v => vendorStatuses[v.id] === "Shortlist");
+      const shortlistedVendors = VENDORS.filter(v => vendorStatuses[v.id] === "shortlist");
 
       if (shortlistedVendors.length === 0) {
         return <div className="no-data">No shortlisted vendors yet. Move vendors to Shortlist in the Dashboard.</div>;
