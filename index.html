@@ -221,7 +221,7 @@
     }
 
     .pipeline-stage {
-      flex: 0 0 auto;
+      flex: 1 1 0;
       min-width: 220px;
     }
 
@@ -1396,8 +1396,9 @@
 
     // Dashboard Component
     function Dashboard({ shortlistedVendors, finalistVendors, evaluators, vendorStatuses, handleStatusChange, getWeightedScore }) {
-      const [activeVendorMenu, setActiveVendorMenu] = useState(null);
-      const longlistVendors = VENDORS.filter(v => vendorStatuses[v.id] !== "shortlist" && vendorStatuses[v.id] !== "finalist").length;
+      const [draggingVendor, setDraggingVendor] = useState(null);
+      const [dropTarget, setDropTarget] = useState(null);
+
       const shortlistVendors = VENDORS.filter(v => vendorStatuses[v.id] === "shortlist").length;
       const finalistVendorsCount = VENDORS.filter(v => vendorStatuses[v.id] === "finalist").length;
 
@@ -1410,8 +1411,39 @@
       const stages = ["longlist", "shortlist", "finalist"];
       const stageColours = { longlist: "#64748B", shortlist: "#3B82F6", finalist: "#22C55E" };
 
+      const onDragStart = (e, vendorId) => {
+        setDraggingVendor(vendorId);
+        e.dataTransfer.setData("text/plain", vendorId);
+        e.dataTransfer.effectAllowed = "move";
+      };
+
+      const onDragEnd = () => {
+        setDraggingVendor(null);
+        setDropTarget(null);
+      };
+
+      const onDragOver = (e, stage) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        setDropTarget(stage);
+      };
+
+      const onDragLeave = (e, stage) => {
+        if (dropTarget === stage) setDropTarget(null);
+      };
+
+      const onDrop = (e, stage) => {
+        e.preventDefault();
+        const vendorId = e.dataTransfer.getData("text/plain");
+        if (vendorId) {
+          handleStatusChange(vendorId, stage);
+        }
+        setDraggingVendor(null);
+        setDropTarget(null);
+      };
+
       return (
-        <div onClick={() => setActiveVendorMenu(null)}>
+        <div>
           <div className="kpi-strip">
             <div className="kpi-card">
               <div className="kpi-label">Total Vendors</div>
@@ -1432,49 +1464,58 @@
           </div>
 
           <div className="pipeline-section">
-            <div className="section-title">Vendor Pipeline</div>
+            <div className="section-title">Vendor Pipeline <span style={{ fontSize: "11px", fontWeight: 400, color: "#64748B", textTransform: "none", letterSpacing: 0 }}>— drag vendors between stages</span></div>
             <div className="pipeline">
-              {stages.map(stage => (
-                <div key={stage} className="pipeline-stage">
-                  <div className="stage-header">{stage.charAt(0).toUpperCase() + stage.slice(1)}</div>
-                  <div className="stage-content">
-                    {VENDORS.filter(v => (vendorStatuses[v.id] || "longlist") === stage).map(vendor => (
-                      <div
-                        key={vendor.id}
-                        className="vendor-pill"
-                        onClick={(e) => { e.stopPropagation(); setActiveVendorMenu(activeVendorMenu === vendor.id ? null : vendor.id); }}
-                        style={{ backgroundColor: vendor.colour + "20", borderColor: vendor.colour, position: "relative" }}
-                      >
-                        <div className="vendor-pill-label">{vendor.name}</div>
-                        <div className="vendor-pill-count">Click to move →</div>
-                        {activeVendorMenu === vendor.id && (
-                          <div onClick={(e) => e.stopPropagation()} style={{
-                            position: "absolute", top: "100%", left: "0", right: "0", zIndex: 50,
-                            background: "#1E293B", border: "1px solid #475569", borderRadius: "6px",
-                            marginTop: "4px", overflow: "hidden", boxShadow: "0 8px 24px rgba(0,0,0,0.4)"
-                          }}>
-                            {stages.filter(s => s !== stage).map(targetStage => (
-                              <div
-                                key={targetStage}
-                                onClick={() => { handleStatusChange(vendor.id, targetStage); setActiveVendorMenu(null); }}
-                                style={{
-                                  padding: "8px 12px", fontSize: "12px", fontWeight: 600, cursor: "pointer",
-                                  color: stageColours[targetStage], transition: "background 0.15s",
-                                  borderBottom: "1px solid #334155"
-                                }}
-                                onMouseEnter={(e) => e.target.style.background = "rgba(59,130,246,0.15)"}
-                                onMouseLeave={(e) => e.target.style.background = "transparent"}
-                              >
-                                Move to {targetStage.charAt(0).toUpperCase() + targetStage.slice(1)}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
+              {stages.map(stage => {
+                const isOver = dropTarget === stage && draggingVendor && (vendorStatuses[draggingVendor] || "longlist") !== stage;
+                return (
+                  <div key={stage} className="pipeline-stage" style={{ flex: "1 1 0" }}>
+                    <div className="stage-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span>{stage.charAt(0).toUpperCase() + stage.slice(1)}</span>
+                      <span style={{ fontSize: "11px", opacity: 0.6 }}>{VENDORS.filter(v => (vendorStatuses[v.id] || "longlist") === stage).length}</span>
+                    </div>
+                    <div
+                      className="stage-content"
+                      onDragOver={(e) => onDragOver(e, stage)}
+                      onDragLeave={(e) => onDragLeave(e, stage)}
+                      onDrop={(e) => onDrop(e, stage)}
+                      style={{
+                        minHeight: "80px",
+                        transition: "all 0.2s ease",
+                        background: isOver ? "rgba(59, 130, 246, 0.08)" : "transparent",
+                        border: isOver ? "2px dashed #3B82F6" : undefined,
+                        borderTop: isOver ? "2px dashed #3B82F6" : undefined,
+                        borderRadius: isOver ? "0 0 8px 8px" : undefined
+                      }}
+                    >
+                      {VENDORS.filter(v => (vendorStatuses[v.id] || "longlist") === stage).map(vendor => (
+                        <div
+                          key={vendor.id}
+                          className="vendor-pill"
+                          draggable="true"
+                          onDragStart={(e) => onDragStart(e, vendor.id)}
+                          onDragEnd={onDragEnd}
+                          style={{
+                            backgroundColor: vendor.colour + "20",
+                            borderColor: vendor.colour,
+                            cursor: "grab",
+                            opacity: draggingVendor === vendor.id ? 0.4 : 1,
+                            transition: "opacity 0.2s"
+                          }}
+                        >
+                          <div className="vendor-pill-label">{vendor.name}</div>
+                          <div className="vendor-pill-count" style={{ fontSize: "10px", opacity: 0.5 }}>⠿ drag to move</div>
+                        </div>
+                      ))}
+                      {isOver && (
+                        <div style={{ padding: "10px", margin: "8px", borderRadius: "6px", border: "2px dashed #3B82F640", textAlign: "center", fontSize: "12px", color: "#3B82F6" }}>
+                          Drop here
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
