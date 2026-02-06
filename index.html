@@ -834,7 +834,7 @@
       );
     }
 
-    // SVG Radar Chart component (replaces Recharts RadarChart)
+    // SVG Radar Chart component — supports N vendors
     function SVGRadarChart({ data, vendors }) {
       const cx = 200, cy = 200, maxR = 150;
       const n = data.length;
@@ -865,10 +865,11 @@
               const p = getPoint(11, i);
               return <text key={i} x={p.x} y={p.y} fill="#94A3B8" fontSize="11" textAnchor="middle" dominantBaseline="middle">{d.criterion}</text>;
             })}
-            {vendors[0] && <polygon points={makePolygon("vendor0")} fill={vendors[0].colour + "40"} stroke={vendors[0].colour} strokeWidth="2" />}
-            {vendors[1] && <polygon points={makePolygon("vendor1")} fill={vendors[1].colour + "40"} stroke={vendors[1].colour} strokeWidth="2" />}
+            {vendors.map((v, idx) => (
+              <polygon key={idx} points={makePolygon("vendor" + idx)} fill={v.colour + "40"} stroke={v.colour} strokeWidth="2" />
+            ))}
           </svg>
-          <div style={{ display: "flex", gap: "24px", marginTop: "12px" }}>
+          <div style={{ display: "flex", gap: "16px", marginTop: "12px", flexWrap: "wrap", justifyContent: "center" }}>
             {vendors.map((v, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <div style={{ width: "12px", height: "12px", borderRadius: "50%", background: v.colour }} />
@@ -1221,17 +1222,13 @@
         }
       };
 
-      const handleStatusChange = async (vendorId) => {
-        const statuses = ["longlist", "shortlist", "finalist"];
-        const currentStatus = vendorStatuses[vendorId] || "longlist";
-        const currentIndex = statuses.indexOf(currentStatus);
-        const nextStatus = statuses[(currentIndex + 1) % statuses.length];
-
+      const handleStatusChange = async (vendorId, targetStatus) => {
+        const status = targetStatus || "longlist";
         try {
           await sb.from("vendor_statuses").upsert(
             [{
               vendor_id: vendorId,
-              status: nextStatus,
+              status: status,
               updated_by: evaluatorId,
             }],
             { onConflict: "vendor_id" }
@@ -1399,6 +1396,7 @@
 
     // Dashboard Component
     function Dashboard({ shortlistedVendors, finalistVendors, evaluators, vendorStatuses, handleStatusChange, getWeightedScore }) {
+      const [activeVendorMenu, setActiveVendorMenu] = useState(null);
       const longlistVendors = VENDORS.filter(v => vendorStatuses[v.id] !== "shortlist" && vendorStatuses[v.id] !== "finalist").length;
       const shortlistVendors = VENDORS.filter(v => vendorStatuses[v.id] === "shortlist").length;
       const finalistVendorsCount = VENDORS.filter(v => vendorStatuses[v.id] === "finalist").length;
@@ -1409,8 +1407,11 @@
         colour: v.colour,
       })).sort((a, b) => b.score - a.score);
 
+      const stages = ["longlist", "shortlist", "finalist"];
+      const stageColours = { longlist: "#64748B", shortlist: "#3B82F6", finalist: "#22C55E" };
+
       return (
-        <div>
+        <div onClick={() => setActiveVendorMenu(null)}>
           <div className="kpi-strip">
             <div className="kpi-card">
               <div className="kpi-label">Total Vendors</div>
@@ -1433,7 +1434,7 @@
           <div className="pipeline-section">
             <div className="section-title">Vendor Pipeline</div>
             <div className="pipeline">
-              {["longlist", "shortlist", "finalist"].map(stage => (
+              {stages.map(stage => (
                 <div key={stage} className="pipeline-stage">
                   <div className="stage-header">{stage.charAt(0).toUpperCase() + stage.slice(1)}</div>
                   <div className="stage-content">
@@ -1441,11 +1442,34 @@
                       <div
                         key={vendor.id}
                         className="vendor-pill"
-                        onClick={() => handleStatusChange(vendor.id)}
-                        style={{ backgroundColor: vendor.colour + "20", borderColor: vendor.colour }}
+                        onClick={(e) => { e.stopPropagation(); setActiveVendorMenu(activeVendorMenu === vendor.id ? null : vendor.id); }}
+                        style={{ backgroundColor: vendor.colour + "20", borderColor: vendor.colour, position: "relative" }}
                       >
                         <div className="vendor-pill-label">{vendor.name}</div>
-                        <div className="vendor-pill-count">Click to move</div>
+                        <div className="vendor-pill-count">Click to move →</div>
+                        {activeVendorMenu === vendor.id && (
+                          <div onClick={(e) => e.stopPropagation()} style={{
+                            position: "absolute", top: "100%", left: "0", right: "0", zIndex: 50,
+                            background: "#1E293B", border: "1px solid #475569", borderRadius: "6px",
+                            marginTop: "4px", overflow: "hidden", boxShadow: "0 8px 24px rgba(0,0,0,0.4)"
+                          }}>
+                            {stages.filter(s => s !== stage).map(targetStage => (
+                              <div
+                                key={targetStage}
+                                onClick={() => { handleStatusChange(vendor.id, targetStage); setActiveVendorMenu(null); }}
+                                style={{
+                                  padding: "8px 12px", fontSize: "12px", fontWeight: 600, cursor: "pointer",
+                                  color: stageColours[targetStage], transition: "background 0.15s",
+                                  borderBottom: "1px solid #334155"
+                                }}
+                                onMouseEnter={(e) => e.target.style.background = "rgba(59,130,246,0.15)"}
+                                onMouseLeave={(e) => e.target.style.background = "transparent"}
+                              >
+                                Move to {targetStage.charAt(0).toUpperCase() + targetStage.slice(1)}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1471,7 +1495,7 @@
       return (
         <div>
           <div className="section-title" style={{ marginBottom: "24px" }}>Vendor Desk Scan Findings</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "16px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "16px", alignItems: "start" }}>
             {VENDORS.map(vendor => {
               const findings = SCAN_FINDINGS[vendor.id];
               const isExpanded = expandedVendor === vendor.id;
@@ -1557,7 +1581,7 @@
     function Scoring({ weights, handleWeightChange, vendorScores, getConsensusScore, getEvaluatorCountForVendor, handleScoreUpdate, evaluatorId }) {
       const [editingCell, setEditingCell] = useState(null);
       const [editScore, setEditScore] = useState(null);
-      const [selectedVendors, setSelectedVendors] = useState([VENDORS[0].id, VENDORS[1].id]);
+      const [selectedVendors, setSelectedVendors] = useState([VENDORS[0].id, VENDORS[1].id, VENDORS[2].id]);
 
       return (
         <div className="scoring-layout">
@@ -1628,7 +1652,7 @@
                     onClick={() => {
                       if (selectedVendors.includes(vendor.id)) {
                         setSelectedVendors(selectedVendors.filter(id => id !== vendor.id));
-                      } else if (selectedVendors.length < 2) {
+                      } else {
                         setSelectedVendors([...selectedVendors, vendor.id]);
                       }
                     }}
@@ -1645,7 +1669,7 @@
                 ))}
               </div>
 
-              {selectedVendors.length === 2 && (() => {
+              {selectedVendors.length >= 2 && (() => {
                 const radarData = CRITERIA.map(crit => {
                   const data = { criterion: crit.short };
                   selectedVendors.forEach((vendorId, idx) => {
@@ -1654,20 +1678,20 @@
                   return data;
                 });
                 return (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
-                    <div className="comparison-chart" style={{ background: "#1E293B", border: "1px solid #334155", borderRadius: "12px", padding: "24px", display: "flex", justifyContent: "center", alignItems: "center" }}>
+                  <div>
+                    <div className="comparison-chart" style={{ background: "#1E293B", border: "1px solid #334155", borderRadius: "12px", padding: "24px", display: "flex", justifyContent: "center", alignItems: "center", marginBottom: "24px" }}>
                       <SVGRadarChart
                         data={radarData}
                         vendors={selectedVendors.map(id => VENDORS.find(v => v.id === id))}
                       />
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "16px" }}>
                       {selectedVendors.map((vendorId) => {
                         const vendor = VENDORS.find(v => v.id === vendorId);
                         return (
                           <div key={vendorId} style={{ background: "#1E293B", border: "1px solid #334155", borderRadius: "12px", padding: "20px" }}>
                             <div style={{ marginBottom: "16px" }}>
-                              <div className="vendor-name">{vendor.name}</div>
+                              <div className="vendor-name" style={{ fontSize: "15px" }}>{vendor.name}</div>
                               <div className="vendor-archetype">{vendor.archetype}</div>
                             </div>
                             {CRITERIA.map(crit => {
@@ -1693,7 +1717,7 @@
               })()}
 
               {selectedVendors.length < 2 && (
-                <div className="no-data" style={{ padding: "20px" }}>Select 2 vendors above to compare</div>
+                <div className="no-data" style={{ padding: "20px" }}>Select at least 2 vendors above to compare</div>
               )}
             </div>
 
