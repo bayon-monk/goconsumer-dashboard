@@ -808,13 +808,25 @@
 </head>
 <body>
   <div id="root"></div>
+  <div id="debug" style="position:fixed;bottom:0;left:0;right:0;background:#1a1a2e;color:#ff6b6b;padding:16px;font-family:monospace;font-size:13px;max-height:40vh;overflow:auto;z-index:9999;display:none;border-top:2px solid #ff6b6b;"></div>
+  <script>
+    var dbg = document.getElementById('debug');
+    function showErr(msg) { dbg.style.display = 'block'; dbg.innerHTML += msg + '<br>'; }
+    window.onerror = function(m, s, l, c, e) { showErr('JS ERROR: ' + m + ' (line ' + l + ')'); };
+    window.addEventListener('unhandledrejection', function(e) { showErr('PROMISE: ' + e.reason); });
+  </script>
 
   <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script>if(!window.React) showErr('FAIL: React not loaded');</script>
   <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script>if(!window.ReactDOM) showErr('FAIL: ReactDOM not loaded');</script>
   <script crossorigin src="https://unpkg.com/react-is@18.2.0/umd/react-is.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+  <script>if(!window.Babel) showErr('FAIL: Babel not loaded');</script>
   <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.min.js"></script>
+  <script>if(!window.Recharts) showErr('FAIL: Recharts not loaded (window.Recharts=' + typeof window.Recharts + ')');</script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>if(!window.supabase) showErr('FAIL: Supabase not loaded (window.supabase=' + typeof window.supabase + ')');</script>
 
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
