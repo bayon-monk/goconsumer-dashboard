@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GoConsumer Vendor Assessment Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; }
+    body { background: #0F172A; color: #E2E8F0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .ld { text-align: center; }
+    .ld h2 { font-size: 20px; margin-bottom: 12px; color: #F1F5F9; }
+    .ld p { color: #94A3B8; font-size: 14px; }
+    .sp { width: 40px; height: 40px; border: 3px solid #334155; border-top-color: #3B82F6; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="ld" id="loader">
+    <div class="sp"></div>
+    <h2>Loading Vendor Assessment...</h2>
+    <p>Connecting to GoConsumer Dashboard</p>
+  </div>
+  <script>
+    const EDGE_URL = 'https://rmilwqckvaotyznwwpph.supabase.co/functions/v1/dashboard';
+    const API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtaWx3cWNrdmFvdHl6bnd3cHBoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzMzc1MTcsImV4cCI6MjA4NTkxMzUxN30.Luv8ERfqwvasfT1O7o16D1EYnq7f2Bac7zZiburLCxk';
+    fetch(EDGE_URL, { headers: { 'apikey': API_KEY } })
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+      .then(html => { document.open(); document.write(html); document.close(); })
+      .catch(err => {
+        document.getElementById('loader').innerHTML =
+          '<h2>Connection Error</h2><p>' + err.message + '</p><p style="margin-top:12px;color:#64748B">Please refresh or check your connection.</p>';
+      });
+  </script>
+</body>
+</html>
