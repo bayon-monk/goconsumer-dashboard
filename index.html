@@ -808,25 +808,10 @@
 </head>
 <body>
   <div id="root"></div>
-  <div id="debug" style="position:fixed;bottom:0;left:0;right:0;background:#1a1a2e;color:#ff6b6b;padding:16px;font-family:monospace;font-size:13px;max-height:40vh;overflow:auto;z-index:9999;display:none;border-top:2px solid #ff6b6b;"></div>
-  <script>
-    var dbg = document.getElementById('debug');
-    function showErr(msg) { dbg.style.display = 'block'; dbg.innerHTML += msg + '<br>'; }
-    window.onerror = function(m, s, l, c, e) { showErr('JS ERROR: ' + m + ' (line ' + l + ')'); };
-    window.addEventListener('unhandledrejection', function(e) {
-      if (e.reason && e.reason.message && e.reason.message.includes('perfromanceMetrics')) return;
-      showErr('PROMISE: ' + e.reason);
-    });
-  </script>
-
   <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-  <script>if(!window.React) showErr('FAIL: React not loaded');</script>
   <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-  <script>if(!window.ReactDOM) showErr('FAIL: ReactDOM not loaded');</script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
-  <script>if(!window.Babel) showErr('FAIL: Babel not loaded');</script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>if(!window.supabase) showErr('FAIL: Supabase not loaded (window.supabase=' + typeof window.supabase + ')');</script>
 
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
@@ -1371,8 +1356,7 @@
           <div className="tabs">
             <button className={`tab ${activeTab === "dashboard" ? "active" : ""}`} onClick={() => setActiveTab("dashboard")}>Dashboard</button>
             <button className={`tab ${activeTab === "desk-scan" ? "active" : ""}`} onClick={() => setActiveTab("desk-scan")}>Desk Scan</button>
-            <button className={`tab ${activeTab === "scoring" ? "active" : ""}`} onClick={() => setActiveTab("scoring")}>Scoring</button>
-            <button className={`tab ${activeTab === "compare" ? "active" : ""}`} onClick={() => setActiveTab("compare")}>Compare</button>
+            <button className={`tab ${activeTab === "scoring" ? "active" : ""}`} onClick={() => setActiveTab("scoring")}>Scoring & Compare</button>
             <button className={`tab ${activeTab === "poc" ? "active" : ""}`} onClick={() => setActiveTab("poc")}>POC Tracker</button>
           </div>
 
@@ -1399,11 +1383,6 @@
                 getEvaluatorCountForVendor={getEvaluatorCountForVendor}
                 handleScoreUpdate={handleScoreUpdate}
                 evaluatorId={evaluatorId}
-              />
-            )}
-            {activeTab === "compare" && (
-              <Compare
-                getConsensusScore={getConsensusScore}
               />
             )}
             {activeTab === "poc" && (
@@ -1487,78 +1466,89 @@
 
     // Desk Scan Component
     function DeskScan() {
+      const [expandedVendor, setExpandedVendor] = useState(null);
+
       return (
         <div>
           <div className="section-title" style={{ marginBottom: "24px" }}>Vendor Desk Scan Findings</div>
-          {VENDORS.map(vendor => (
-            <div key={vendor.id} className="vendor-card">
-              <div className="vendor-card-header">
-                <div>
-                  <div className="vendor-name">{vendor.name}</div>
-                  <div className="vendor-archetype">{vendor.archetype}</div>
-                  {SCAN_FINDINGS[vendor.id]?.url && (
-                    <a href={SCAN_FINDINGS[vendor.id].url} target="_blank" rel="noopener noreferrer"
-                       style={{ color: "#3B82F6", fontSize: "12px", textDecoration: "none", display: "block", marginTop: "4px" }}>
-                      {SCAN_FINDINGS[vendor.id].url.replace("https://", "").replace("www.", "")} ↗
-                    </a>
-                  )}
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  {SCAN_FINDINGS[vendor.id]?.g2Rating && (
-                    <div style={{ fontSize: "13px", color: "#FACC15", marginBottom: "4px" }}>
-                      {"★".repeat(Math.round(SCAN_FINDINGS[vendor.id].g2Rating))} <span style={{ color: "#94A3B8", fontSize: "12px" }}>{SCAN_FINDINGS[vendor.id].g2Rating} G2</span>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "16px" }}>
+            {VENDORS.map(vendor => {
+              const findings = SCAN_FINDINGS[vendor.id];
+              const isExpanded = expandedVendor === vendor.id;
+              return (
+                <div
+                  key={vendor.id}
+                  className="vendor-card"
+                  onClick={() => setExpandedVendor(isExpanded ? null : vendor.id)}
+                  style={{ cursor: "pointer", borderLeft: `3px solid ${vendor.colour}`, transition: "all 0.3s ease" }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ flex: 1 }}>
+                      <div className="vendor-name" style={{ fontSize: "16px" }}>{vendor.name}</div>
+                      <div className="vendor-archetype">{vendor.archetype}</div>
+                      {findings?.url && (
+                        <a href={findings.url} target="_blank" rel="noopener noreferrer"
+                           onClick={(e) => e.stopPropagation()}
+                           style={{ color: "#3B82F6", fontSize: "12px", textDecoration: "none", display: "block", marginTop: "4px" }}>
+                          {findings.url.replace("https://", "").replace("www.", "")} ↗
+                        </a>
+                      )}
+                    </div>
+                    <div style={{ textAlign: "right", flexShrink: 0 }}>
+                      {findings?.g2Rating && (
+                        <div style={{ fontSize: "13px", color: "#FACC15", marginBottom: "4px" }}>
+                          {"★".repeat(Math.round(findings.g2Rating))} <span style={{ color: "#94A3B8", fontSize: "11px" }}>{findings.g2Rating}</span>
+                        </div>
+                      )}
+                      <div style={{ fontSize: "11px", padding: "4px 8px", background: "rgba(234,179,8,0.2)", color: "#FACC15", borderRadius: "4px", whiteSpace: "nowrap" }}>
+                        {findings?.pricing || "N/A"}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Summary row - always visible */}
+                  <div style={{ display: "flex", gap: "16px", marginTop: "12px", fontSize: "12px", color: "#94A3B8" }}>
+                    <span>🔗 {findings?.integrations || "?"} integrations</span>
+                    <span>📋 {findings?.frameworks || "?"} frameworks</span>
+                  </div>
+
+                  {/* Expanded details */}
+                  {isExpanded && findings && (
+                    <div style={{ marginTop: "16px", borderTop: "1px solid #334155", paddingTop: "16px" }} onClick={(e) => e.stopPropagation()}>
+                      <div className="finding">
+                        <div className="finding-label">Evidence Approach</div>
+                        <div className="finding-value">{findings.evidenceApproach}</div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginTop: "12px" }}>
+                        <div>
+                          <div className="finding-label">Strengths</div>
+                          <ul style={{ marginLeft: "16px", color: "#86EFAC", fontSize: "13px", lineHeight: "1.8" }}>
+                            {findings.strengths.map((s, i) => <li key={i}>{s}</li>)}
+                          </ul>
+                        </div>
+                        <div>
+                          <div className="finding-label">Gaps</div>
+                          <ul style={{ marginLeft: "16px", color: "#FCA5A5", fontSize: "13px", lineHeight: "1.8" }}>
+                            {findings.gaps.map((g, i) => <li key={i}>{g}</li>)}
+                          </ul>
+                        </div>
+                      </div>
+
+                      <div className="verdict" style={{ marginTop: "12px" }}>
+                        <strong>Verdict:</strong> {findings.verdict}
+                      </div>
                     </div>
                   )}
-                  <div className="score-badge score-amber" style={{ fontSize: "11px" }}>
-                    {SCAN_FINDINGS[vendor.id]?.pricing || "N/A"}
+
+                  {/* Expand indicator */}
+                  <div style={{ textAlign: "center", marginTop: "8px", fontSize: "11px", color: "#475569" }}>
+                    {isExpanded ? "▲ Click to collapse" : "▼ Click to expand"}
                   </div>
                 </div>
-              </div>
-
-              {SCAN_FINDINGS[vendor.id] && (
-                <div>
-                  <div className="finding">
-                    <div className="finding-label">Integrations</div>
-                    <div className="finding-value">{SCAN_FINDINGS[vendor.id].integrations}</div>
-                  </div>
-                  <div className="finding">
-                    <div className="finding-label">Frameworks</div>
-                    <div className="finding-value">{SCAN_FINDINGS[vendor.id].frameworks}</div>
-                  </div>
-                  <div className="finding">
-                    <div className="finding-label">Evidence Approach</div>
-                    <div className="finding-value">{SCAN_FINDINGS[vendor.id].evidenceApproach}</div>
-                  </div>
-
-                  <div className="finding">
-                    <div className="finding-label">Strengths</div>
-                    <div className="finding-value">
-                      <ul style={{ marginLeft: "20px", color: "#86EFAC" }}>
-                        {SCAN_FINDINGS[vendor.id].strengths.map((s, i) => (
-                          <li key={i}>{s}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-
-                  <div className="finding">
-                    <div className="finding-label">Gaps</div>
-                    <div className="finding-value">
-                      <ul style={{ marginLeft: "20px", color: "#FCA5A5" }}>
-                        {SCAN_FINDINGS[vendor.id].gaps.map((g, i) => (
-                          <li key={i}>{g}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-
-                  <div className="verdict">
-                    <strong>Verdict:</strong> {SCAN_FINDINGS[vendor.id].verdict}
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
+              );
+            })}
+          </div>
         </div>
       );
     }
@@ -1567,6 +1557,7 @@
     function Scoring({ weights, handleWeightChange, vendorScores, getConsensusScore, getEvaluatorCountForVendor, handleScoreUpdate, evaluatorId }) {
       const [editingCell, setEditingCell] = useState(null);
       const [editScore, setEditScore] = useState(null);
+      const [selectedVendors, setSelectedVendors] = useState([VENDORS[0].id, VENDORS[1].id]);
 
       return (
         <div className="scoring-layout">
@@ -1625,6 +1616,85 @@
                   })}
                 </div>
               ))}
+            </div>
+
+            {/* Vendor Comparison */}
+            <div style={{ marginTop: "24px" }}>
+              <div className="section-title" style={{ marginBottom: "16px" }}>Vendor Comparison</div>
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "16px" }}>
+                {VENDORS.map(vendor => (
+                  <div
+                    key={vendor.id}
+                    onClick={() => {
+                      if (selectedVendors.includes(vendor.id)) {
+                        setSelectedVendors(selectedVendors.filter(id => id !== vendor.id));
+                      } else if (selectedVendors.length < 2) {
+                        setSelectedVendors([...selectedVendors, vendor.id]);
+                      }
+                    }}
+                    style={{
+                      padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: 500, cursor: "pointer",
+                      background: selectedVendors.includes(vendor.id) ? vendor.colour : "rgba(51,65,85,0.5)",
+                      color: selectedVendors.includes(vendor.id) ? "white" : "#94A3B8",
+                      border: `1px solid ${vendor.colour}40`,
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    {vendor.name}
+                  </div>
+                ))}
+              </div>
+
+              {selectedVendors.length === 2 && (() => {
+                const radarData = CRITERIA.map(crit => {
+                  const data = { criterion: crit.short };
+                  selectedVendors.forEach((vendorId, idx) => {
+                    data[`vendor${idx}`] = getConsensusScore(vendorId, crit.id);
+                  });
+                  return data;
+                });
+                return (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                    <div className="comparison-chart" style={{ background: "#1E293B", border: "1px solid #334155", borderRadius: "12px", padding: "24px", display: "flex", justifyContent: "center", alignItems: "center" }}>
+                      <SVGRadarChart
+                        data={radarData}
+                        vendors={selectedVendors.map(id => VENDORS.find(v => v.id === id))}
+                      />
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                      {selectedVendors.map((vendorId) => {
+                        const vendor = VENDORS.find(v => v.id === vendorId);
+                        return (
+                          <div key={vendorId} style={{ background: "#1E293B", border: "1px solid #334155", borderRadius: "12px", padding: "20px" }}>
+                            <div style={{ marginBottom: "16px" }}>
+                              <div className="vendor-name">{vendor.name}</div>
+                              <div className="vendor-archetype">{vendor.archetype}</div>
+                            </div>
+                            {CRITERIA.map(crit => {
+                              const score = getConsensusScore(vendorId, crit.id);
+                              return (
+                                <div key={crit.id} style={{ marginBottom: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                  <div style={{ fontSize: "12px", color: "#94A3B8" }}>{crit.short}</div>
+                                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                    <div style={{ width: "60px", height: "4px", background: "#0F172A", borderRadius: "2px", overflow: "hidden" }}>
+                                      <div style={{ width: (score / 10 * 100) + "%", height: "100%", background: vendor.colour, borderRadius: "2px" }} />
+                                    </div>
+                                    <span style={{ fontSize: "12px", fontWeight: 600, color: getScoreFgColor(score), minWidth: "28px", textAlign: "right" }}>{score.toFixed(1)}</span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {selectedVendors.length < 2 && (
+                <div className="no-data" style={{ padding: "20px" }}>Select 2 vendors above to compare</div>
+              )}
             </div>
 
             {editingCell && (
@@ -1687,85 +1757,6 @@
               <button className="save" onClick={() => onSave(vendorId, criterionId, initialScore)}>Save Score</button>
               <button className="cancel" onClick={onCancel}>Cancel</button>
             </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Compare Component
-    function Compare({ getConsensusScore }) {
-      const [selectedVendors, setSelectedVendors] = useState([VENDORS[0].id, VENDORS[1].id]);
-
-      const radarData = CRITERIA.map(crit => {
-        const data = { criterion: crit.short };
-        selectedVendors.forEach((vendorId, idx) => {
-          data[`vendor${idx}`] = getConsensusScore(vendorId, crit.id);
-        });
-        return data;
-      });
-
-      return (
-        <div className="compare-layout">
-          <div className="vendor-selector">
-            <div className="section-title" style={{ fontSize: "13px", marginBottom: "12px" }}>Select Vendors</div>
-            {VENDORS.map(vendor => (
-              <div
-                key={vendor.id}
-                className={`vendor-selector-item ${selectedVendors.includes(vendor.id) ? "active" : ""}`}
-                onClick={() => {
-                  if (selectedVendors.includes(vendor.id)) {
-                    setSelectedVendors(selectedVendors.filter(id => id !== vendor.id));
-                  } else if (selectedVendors.length < 2) {
-                    setSelectedVendors([...selectedVendors, vendor.id]);
-                  }
-                }}
-                style={{ backgroundColor: selectedVendors.includes(vendor.id) ? vendor.colour : "transparent", borderColor: vendor.colour }}
-              >
-                {vendor.name}
-              </div>
-            ))}
-          </div>
-
-          <div>
-            {selectedVendors.length === 2 && (
-              <div>
-                <div className="comparison-chart">
-                  <SVGRadarChart
-                    data={radarData}
-                    vendors={selectedVendors.map(id => VENDORS.find(v => v.id === id))}
-                  />
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginTop: "24px" }}>
-                  {selectedVendors.map((vendorId, idx) => {
-                    const vendor = VENDORS.find(v => v.id === vendorId);
-                    return (
-                      <div key={vendorId} className="chart-container">
-                        <div style={{ marginBottom: "16px" }}>
-                          <div className="vendor-name">{vendor.name}</div>
-                          <div className="vendor-archetype">{vendor.archetype}</div>
-                        </div>
-                        {CRITERIA.map(crit => {
-                          const score = getConsensusScore(vendorId, crit.id);
-                          return (
-                            <div key={crit.id} style={{ marginBottom: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                              <div style={{ fontSize: "13px", color: "#94A3B8" }}>{crit.short}</div>
-                              <div className={`score-badge ${getScoreColor(score)}`} style={{ padding: "4px 8px", fontSize: "11px" }}>
-                                {score.toFixed(1)}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {selectedVendors.length < 2 && (
-              <div className="no-data">Select 2 vendors to compare</div>
-            )}
           </div>
         </div>
       );
