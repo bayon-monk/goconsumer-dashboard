@@ -5,31 +5,1737 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GoConsumer Vendor Assessment Dashboard</title>
   <style>
-    * { margin: 0; padding: 0; }
-    body { background: #0F172A; color: #E2E8F0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-    .ld { text-align: center; }
-    .ld h2 { font-size: 20px; margin-bottom: 12px; color: #F1F5F9; }
-    .ld p { color: #94A3B8; font-size: 14px; }
-    .sp { width: 40px; height: 40px; border: 3px solid #334155; border-top-color: #3B82F6; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #0F172A, #1E293B);
+      min-height: 100vh;
+      color: #E2E8F0;
+      overflow-x: hidden;
+    }
+
+    #root {
+      min-height: 100vh;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal {
+      background: #1E293B;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 32px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal h2 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #F1F5F9;
+    }
+
+    .modal p {
+      color: #94A3B8;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .modal input {
+      width: 100%;
+      padding: 12px 16px;
+      background: #0F172A;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #E2E8F0;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    .modal input:focus {
+      outline: none;
+      border-color: #3B82F6;
+      background: #1a2847;
+    }
+
+    .modal button {
+      width: 100%;
+      padding: 12px 16px;
+      background: #3B82F6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .modal button:hover {
+      background: #2563EB;
+    }
+
+    .header {
+      background: rgba(30, 41, 59, 0.8);
+      border-bottom: 1px solid #334155;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #F1F5F9;
+    }
+
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #94A3B8;
+      font-size: 13px;
+    }
+
+    .evaluator-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(51, 65, 85, 0.5);
+      border-radius: 6px;
+    }
+
+    .evaluator-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid #334155;
+      background: rgba(30, 41, 59, 0.5);
+      padding: 0 24px;
+    }
+
+    .tab {
+      padding: 16px 20px;
+      background: transparent;
+      border: none;
+      color: #94A3B8;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .tab:hover {
+      color: #E2E8F0;
+    }
+
+    .tab.active {
+      color: #3B82F6;
+      border-bottom-color: #3B82F6;
+    }
+
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .kpi-card {
+      background: #1E293B;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .kpi-label {
+      color: #94A3B8;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .kpi-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: #F1F5F9;
+    }
+
+    .pipeline-section {
+      margin-bottom: 24px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #F1F5F9;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .pipeline {
+      display: flex;
+      gap: 16px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+
+    .pipeline-stage {
+      flex: 0 0 auto;
+      min-width: 220px;
+    }
+
+    .stage-header {
+      background: rgba(51, 65, 85, 0.3);
+      padding: 12px 16px;
+      border-radius: 8px 8px 0 0;
+      font-weight: 600;
+      font-size: 13px;
+      color: #94A3B8;
+      border: 1px solid #334155;
+      border-bottom: none;
+    }
+
+    .stage-content {
+      border: 1px solid #334155;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      display: flex;
+      flex-direction: column;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .vendor-pill {
+      padding: 12px 14px;
+      margin: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      border: 1px solid;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .vendor-pill:hover {
+      opacity: 0.8;
+      transform: translateY(-2px);
+    }
+
+    .vendor-pill-label {
+      color: white;
+    }
+
+    .vendor-pill-count {
+      font-size: 11px;
+      opacity: 0.7;
+    }
+
+    .chart-container {
+      background: #1E293B;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .vendor-card {
+      background: #1E293B;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .vendor-card:hover {
+      border-color: #475569;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .vendor-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .vendor-name {
+      font-size: 18px;
+      font-weight: 600;
+      color: #F1F5F9;
+    }
+
+    .vendor-archetype {
+      font-size: 12px;
+      color: #94A3B8;
+      margin-top: 4px;
+    }
+
+    .score-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .score-green {
+      background: rgba(34, 197, 94, 0.2);
+      color: #86EFAC;
+    }
+
+    .score-amber {
+      background: rgba(234, 179, 8, 0.2);
+      color: #FACC15;
+    }
+
+    .score-orange {
+      background: rgba(249, 115, 22, 0.2);
+      color: #FED7AA;
+    }
+
+    .score-red {
+      background: rgba(239, 68, 68, 0.2);
+      color: #FCA5A5;
+    }
+
+    .finding {
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #334155;
+    }
+
+    .finding:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .finding-label {
+      font-size: 12px;
+      color: #94A3B8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .finding-value {
+      color: #E2E8F0;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .verdict {
+      padding: 12px 16px;
+      background: rgba(59, 130, 246, 0.1);
+      border-left: 4px solid #3B82F6;
+      border-radius: 6px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #BFDBFE;
+      margin-top: 12px;
+    }
+
+    .scoring-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 24px;
+    }
+
+    .weight-panel {
+      background: #1E293B;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 20px;
+      height: fit-content;
+      position: sticky;
+      top: 24px;
+    }
+
+    .weight-item {
+      margin-bottom: 20px;
+    }
+
+    .weight-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #E2E8F0;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .weight-input {
+      width: 100%;
+      height: 6px;
+      background: #0F172A;
+      border-radius: 3px;
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .weight-input::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #3B82F6;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .weight-input::-webkit-slider-thumb:hover {
+      background: #2563EB;
+    }
+
+    .weight-input::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #3B82F6;
+      cursor: pointer;
+      border: none;
+      transition: background 0.2s;
+    }
+
+    .weight-input::-moz-range-thumb:hover {
+      background: #2563EB;
+    }
+
+    .score-matrix {
+      background: #1E293B;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .matrix-header {
+      display: flex;
+      border-bottom: 1px solid #334155;
+    }
+
+    .matrix-header-cell {
+      padding: 12px 16px;
+      background: rgba(51, 65, 85, 0.3);
+      font-size: 12px;
+      font-weight: 600;
+      color: #94A3B8;
+      border-right: 1px solid #334155;
+      flex: 1;
+      min-width: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .matrix-row {
+      display: flex;
+      border-bottom: 1px solid #334155;
+    }
+
+    .matrix-row:last-child {
+      border-bottom: none;
+    }
+
+    .matrix-row-label {
+      padding: 12px 16px;
+      background: rgba(51, 65, 85, 0.2);
+      font-size: 13px;
+      font-weight: 600;
+      color: #E2E8F0;
+      border-right: 1px solid #334155;
+      flex: 0 0 150px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .row-label-count {
+      font-size: 11px;
+      color: #64748B;
+      margin-top: 4px;
+    }
+
+    .matrix-cell {
+      flex: 1;
+      min-width: 120px;
+      padding: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-right: 1px solid #334155;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .matrix-cell:hover {
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    .matrix-cell-content {
+      text-align: center;
+    }
+
+    .consensus-score {
+      font-size: 20px;
+      font-weight: 700;
+      color: #F1F5F9;
+    }
+
+    .evaluator-count {
+      font-size: 11px;
+      color: #64748B;
+      margin-top: 2px;
+    }
+
+    .score-modal {
+      background: #1E293B;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 400px;
+      width: 90%;
+    }
+
+    .score-modal h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #F1F5F9;
+    }
+
+    .score-slider {
+      margin-bottom: 24px;
+    }
+
+    .score-slider-label {
+      font-size: 14px;
+      color: #E2E8F0;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .score-slider-input {
+      width: 100%;
+      height: 8px;
+      background: #0F172A;
+      border-radius: 4px;
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .score-slider-input::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #3B82F6;
+      cursor: pointer;
+    }
+
+    .score-slider-input::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #3B82F6;
+      cursor: pointer;
+      border: none;
+    }
+
+    .score-modal-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .score-modal-buttons button {
+      flex: 1;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .score-modal-buttons .save {
+      background: #3B82F6;
+      color: white;
+    }
+
+    .score-modal-buttons .save:hover {
+      background: #2563EB;
+    }
+
+    .score-modal-buttons .cancel {
+      background: #334155;
+      color: #E2E8F0;
+    }
+
+    .score-modal-buttons .cancel:hover {
+      background: #475569;
+    }
+
+    .compare-layout {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 24px;
+    }
+
+    .vendor-selector {
+      background: #1E293B;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 20px;
+      height: fit-content;
+      position: sticky;
+      top: 24px;
+      max-width: 250px;
+    }
+
+    .vendor-selector-item {
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      border: 1px solid;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .vendor-selector-item.active {
+      background: #3B82F6;
+      border-color: #2563EB;
+      color: white;
+    }
+
+    .vendor-selector-item:hover {
+      border-color: #475569;
+    }
+
+    .comparison-chart {
+      background: #1E293B;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 500px;
+    }
+
+    .poc-layout {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .poc-card {
+      background: #1E293B;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .poc-card-header {
+      font-size: 16px;
+      font-weight: 600;
+      color: #F1F5F9;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .poc-color-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .poc-category {
+      font-size: 12px;
+      color: #94A3B8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      margin-top: 12px;
+    }
+
+    .poc-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .poc-item:hover {
+      color: #3B82F6;
+    }
+
+    .poc-checkbox {
+      width: 18px;
+      height: 18px;
+      border: 2px solid #475569;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+
+    .poc-item.checked .poc-checkbox {
+      background: #22C55E;
+      border-color: #16A34A;
+    }
+
+    .poc-item.checked .poc-item-label {
+      color: #22C55E;
+      text-decoration: line-through;
+      color: #64748B;
+    }
+
+    .poc-item-label {
+      font-size: 13px;
+      color: #E2E8F0;
+      flex: 1;
+    }
+
+    .no-data {
+      text-align: center;
+      padding: 40px 20px;
+      color: #64748B;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px 20px;
+      color: #94A3B8;
+    }
+
+    @media (max-width: 1200px) {
+      .scoring-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .weight-panel {
+        position: static;
+      }
+
+      .compare-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .vendor-selector {
+        max-width: 100%;
+        position: static;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .tabs {
+        overflow-x: auto;
+      }
+
+      .kpi-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .pipeline {
+        justify-content: flex-start;
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="ld" id="loader">
-    <div class="sp"></div>
-    <h2>Loading Vendor Assessment...</h2>
-    <p>Connecting to GoConsumer Dashboard</p>
-  </div>
-  <script>
-    const EDGE_URL = 'https://rmilwqckvaotyznwwpph.supabase.co/functions/v1/dashboard';
-    const API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtaWx3cWNrdmFvdHl6bnd3cHBoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzMzc1MTcsImV4cCI6MjA4NTkxMzUxN30.Luv8ERfqwvasfT1O7o16D1EYnq7f2Bac7zZiburLCxk';
-    fetch(EDGE_URL, { headers: { 'apikey': API_KEY } })
-      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
-      .then(html => { document.open(); document.write(html); document.close(); })
-      .catch(err => {
-        document.getElementById('loader').innerHTML =
-          '<h2>Connection Error</h2><p>' + err.message + '</p><p style="margin-top:12px;color:#64748B">Please refresh or check your connection.</p>';
+  <div id="root"></div>
+
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/recharts@2.12.7/umd/Recharts.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+    const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } = Recharts;
+
+    // Constants
+    const CRITERIA = [
+      { id: "evidence", label: "Evidence Automation", short: "Evidence", defaultWeight: 25 },
+      { id: "extensibility", label: "Extensibility", short: "Extend.", defaultWeight: 15 },
+      { id: "security", label: "Security & Privacy", short: "Security", defaultWeight: 15 },
+      { id: "frameworks", label: "Multi-Framework", short: "Frameworks", defaultWeight: 15 },
+      { id: "workflow", label: "Workflow & Accountability", short: "Workflow", defaultWeight: 10 },
+      { id: "ttv", label: "Time-to-Value", short: "TTV", defaultWeight: 10 },
+      { id: "tco", label: "Total Cost of Ownership", short: "TCO", defaultWeight: 7 },
+      { id: "viability", label: "Vendor Viability", short: "Viability", defaultWeight: 3 },
+    ];
+
+    const VENDORS = [
+      { id: "eramba", name: "Eramba", track: 0, archetype: "Incumbent", colour: "#EF4444", defaultScores: { evidence: 3, extensibility: 4, security: 5, frameworks: 5, workflow: 4, ttv: 7, tco: 8, viability: 6 } },
+      { id: "vanta", name: "Vanta", track: 1, archetype: "Compliance Automation", colour: "#3B82F6", defaultScores: { evidence: 8, extensibility: 9, security: 9, frameworks: 8, workflow: 8, ttv: 8, tco: 6, viability: 9 } },
+      { id: "drata", name: "Drata", track: 1, archetype: "Compliance Automation", colour: "#6366F1", defaultScores: { evidence: 8, extensibility: 8, security: 8, frameworks: 7, workflow: 8, ttv: 7, tco: 6, viability: 8 } },
+      { id: "secureframe", name: "Secureframe", track: 1, archetype: "Compliance Automation", colour: "#8B5CF6", defaultScores: { evidence: 8, extensibility: 7, security: 8, frameworks: 7, workflow: 8, ttv: 7, tco: 6, viability: 8 } },
+      { id: "sprinto", name: "Sprinto", track: 1, archetype: "Compliance Automation", colour: "#06B6D4", defaultScores: { evidence: 9, extensibility: 8, security: 8, frameworks: 9, workflow: 8, ttv: 7, tco: 7, viability: 8 } },
+      { id: "thoropass", name: "Thoropass", track: 1, archetype: "Compliance Automation", colour: "#0EA5E9", defaultScores: { evidence: 7, extensibility: 7, security: 8, frameworks: 8, workflow: 8, ttv: 7, tco: 6, viability: 7 } },
+      { id: "scrut", name: "Scrut", track: 1, archetype: "Compliance Automation", colour: "#14B8A6", defaultScores: { evidence: 8, extensibility: 6, security: 9, frameworks: 7, workflow: 7, ttv: 8, tco: 5, viability: 7 } },
+      { id: "hyperproof", name: "Hyperproof", track: 2, archetype: "GRC Platform", colour: "#A855F7", defaultScores: { evidence: 8, extensibility: 8, security: 9, frameworks: 9, workflow: 7, ttv: 6, tco: 7, viability: 9 } },
+      { id: "onetrust", name: "OneTrust", track: 2, archetype: "GRC Platform", colour: "#C084FC", defaultScores: { evidence: 7, extensibility: 7, security: 8, frameworks: 8, workflow: 9, ttv: 5, tco: 4, viability: 9 } },
+      { id: "aws-audit", name: "AWS Audit Mgr", track: 3, archetype: "Cloud-Native / OSS", colour: "#22C55E", defaultScores: { evidence: 6, extensibility: 3, security: 8, frameworks: 6, workflow: 4, ttv: 9, tco: 9, viability: 8 } },
+      { id: "prowler", name: "Prowler + OSS", track: 3, archetype: "Cloud-Native / OSS", colour: "#4ADE80", defaultScores: { evidence: 7, extensibility: 8, security: 8, frameworks: 8, workflow: 4, ttv: 8, tco: 9, viability: 7 } },
+    ];
+
+    const SCAN_FINDINGS = {
+      eramba: {
+        integrations: "5-10",
+        frameworks: "3-5 core",
+        pricing: "€2,500/yr Enterprise",
+        evidenceApproach: "Manual uploads + limited AWS Account Reviews (Enterprise only). No continuous monitoring.",
+        strengths: ["Extremely low cost (€2,500/yr)", "Self-hosted option for data sovereignty", "Open-source transparency"],
+        gaps: ["Minimal AWS automation — no CloudTrail/Config integration", "No AI/agentic capabilities or roadmap", "Manual evidence collection dominates", "No auditor portal", "Weak third-party integrations", "No continuous monitoring"],
+        verdict: "Incumbent selected for price, not fit. Critical gaps for fast-moving fintech on AWS."
+      },
+      vanta: {
+        integrations: "300+",
+        frameworks: "35+",
+        pricing: "$10k–$80k/yr tiered",
+        evidenceApproach: "1,200+ automated tests run hourly. Continuous monitoring with scheduled API pulls.",
+        strengths: ["Largest integration ecosystem (300+ native)", "Connectors API with custom resources", "AI-powered policy generation"],
+        gaps: ["Limited report customisation", "10–20% renewal price increases", "Data residency not documented"],
+        verdict: "Market leader. Best extensibility via Connectors API."
+      },
+      drata: {
+        integrations: "170+",
+        frameworks: "20+",
+        pricing: "$7.5k–$50k/yr tiered",
+        evidenceApproach: "Continuous monitoring with daily visibility. Custom Connections and Tests (CCT).",
+        strengths: ["AWS Org Units auto-sync", "Audit Hub for collaboration", "Auto-remediation on risk changes"],
+        gaps: ["HITRUST requires manual mapping", "UI can feel sluggish", "Year-2 costs can reach $150–250k+"],
+        verdict: "Strong all-rounder. Excellent continuous monitoring."
+      },
+      secureframe: {
+        integrations: "300+",
+        frameworks: "Multiple global",
+        pricing: "$7.5k base, avg $20.5k/yr",
+        evidenceApproach: "Continuous daily monitoring. Auto-collect and map to frameworks. Comply AI for IaC.",
+        strengths: ["EU data residency (AWS London)", "300+ integrations", "Auditor Partner Console"],
+        gaps: ["Rigid in complex environments", "Some manual workflows remain", "Onboarding challenges"],
+        verdict: "Strong contender. EU data residency differentiator."
+      },
+      sprinto: {
+        integrations: "300+",
+        frameworks: "50+",
+        pricing: "$6k–$25k/yr all-inclusive",
+        evidenceApproach: "200+ deep integrations with daily scans. 99% automation. GraphQL API.",
+        strengths: ["Best multi-framework (50+ preloaded)", "All-inclusive pricing", "99% automation"],
+        gaps: ["Setup can feel overwhelming", "Limited GitLab integration", "AI features limited"],
+        verdict: "Best value. Excellent for multi-framework scaling."
+      },
+      thoropass: {
+        integrations: "100+",
+        frameworks: "20+",
+        pricing: "$20k–$47k/yr incl. auditors",
+        evidenceApproach: "Automated evidence from integrations. Real-time monitoring. One-click remediation.",
+        strengths: ["Paired compliance managers", "In-platform auditors", "Evidence reuse reduces requests 60%"],
+        gaps: ["Limited automation vs peers", "Navigation difficulties", "File types limited to PDF/images"],
+        verdict: "Best for white-glove guidance. Less for self-service teams."
+      },
+      scrut: {
+        integrations: "100+",
+        frameworks: "50+",
+        pricing: "$5k–$20k/yr custom",
+        evidenceApproach: "Scrut Monitor auto-collects at intervals. 70% automation. Daily drift alerts.",
+        strengths: ["Privacy-first — no external AI training", "70% evidence automation", "Exceptional ease of use"],
+        gaps: ["No built-in auditor", "No common control mapping", "Limited API docs"],
+        verdict: "Good for simplicity + data privacy. Weaker extensibility."
+      },
+      hyperproof: {
+        integrations: "70+ Hypersyncs",
+        frameworks: "120+",
+        pricing: "$12k–$100k/yr",
+        evidenceApproach: "Hypersyncs on customisable schedules. 70+ automated sources. CCM.",
+        strengths: ["Largest framework library (120+)", "Open-source Hypersync SDK", "Enterprise track record"],
+        gaps: ["Implementation complexity", "No agentic AI", "Limited real-time for non-automated"],
+        verdict: "Best for enterprise GRC. Higher implementation overhead."
+      },
+      onetrust: {
+        integrations: "200+",
+        frameworks: "Major + custom",
+        pricing: "$500–$17.5k per module",
+        evidenceApproach: "Scheduled pulls via 200+ connectors. DSR automation. Questionnaire-based.",
+        strengths: ["Comprehensive audit management", "200+ connectors", "Strong vendor risk mgmt"],
+        gaps: ["AWS multi-account unclear", "Slow implementation", "Pricing non-transparent"],
+        verdict: "Enterprise-grade but heavy. For large complex orgs."
+      },
+      "aws-audit": {
+        integrations: "AWS-only",
+        frameworks: "7 pre-built + custom",
+        pricing: "~$0.20–$2.00 per assessment",
+        evidenceApproach: "Automated CloudTrail + Config evidence. Scheduled snapshots.",
+        strengths: ["Zero friction for AWS", "Transparent pricing", "Multi-account via Organisations"],
+        gaps: ["AWS-only — no third-party", "No auditor portal", "Limited workflow"],
+        verdict: "Essential AWS layer but not standalone."
+      },
+      prowler: {
+        integrations: "600+ AWS controls",
+        frameworks: "10+ (CIS, PCI, SOC 2...)",
+        pricing: "Free OSS / $100–$500/mo SaaS",
+        evidenceApproach: "Continuous scanning across AWS/Azure/GCP/K8s. 600+ controls.",
+        strengths: ["Multi-cloud (AWS/Azure/GCP/K8s)", "600+ AWS controls", "Free open-source"],
+        gaps: ["No workflow or auditor collaboration", "No third-party integrations", "Findings-focused, not audit-focused"],
+        verdict: "Excellent posture tool. Combine with GRC platform."
+      }
+    };
+
+    const POC_CONNECTORS = ["AWS (multi-account)", "Identity Provider", "GitHub / CI-CD", "Jira / Linear", "Vuln Scanner", "HR System"];
+    const POC_CONTROLS = ["MFA enforced", "PR approval + ticket ref", "Immutable logging", "Encryption at rest", "Vuln scan SLA", "Access reviews"];
+
+    const TRACK_COLOURS = { 0: "#EF4444", 1: "#3B82F6", 2: "#A855F7", 3: "#22C55E" };
+    const TRACK_LABELS = { 0: "Incumbent", 1: "Compliance Automation", 2: "GRC Platform", 3: "Cloud-Native / OSS" };
+
+    // Supabase Client
+    const SUPABASE_URL = "https://rmilwqckvaotyznwwpph.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtaWx3cWNrdmFvdHl6bnd3cHBoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzMzc1MTcsImV4cCI6MjA4NTkxMzUxN30.Luv8ERfqwvasfT1O7o16D1EYnq7f2Bac7zZiburLCxk";
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Colors for score ranges
+    const getScoreColor = (score) => {
+      if (score >= 8) return "score-green";
+      if (score >= 6) return "score-amber";
+      if (score >= 4) return "score-orange";
+      return "score-red";
+    };
+
+    const getScoreBgColor = (score) => {
+      if (score >= 8) return "rgba(34, 197, 94, 0.15)";
+      if (score >= 6) return "rgba(234, 179, 8, 0.15)";
+      if (score >= 4) return "rgba(249, 115, 22, 0.15)";
+      return "rgba(239, 68, 68, 0.15)";
+    };
+
+    const getScoreFgColor = (score) => {
+      if (score >= 8) return "#86EFAC";
+      if (score >= 6) return "#FACC15";
+      if (score >= 4) return "#FED7AA";
+      return "#FCA5A5";
+    };
+
+    // Main App Component
+    function App() {
+      const [evaluatorId, setEvaluatorId] = useState(null);
+      const [evaluatorName, setEvaluatorName] = useState("");
+      const [evaluatorColour, setEvaluatorColour] = useState("");
+      const [showEvaluatorModal, setShowEvaluatorModal] = useState(false);
+      const [activeTab, setActiveTab] = useState("dashboard");
+
+      const [evaluators, setEvaluators] = useState([]);
+      const [vendorScores, setVendorScores] = useState({});
+      const [vendorStatuses, setVendorStatuses] = useState({});
+      const [pocProgress, setPocProgress] = useState({});
+      const [weights, setWeights] = useState({});
+      const [evaluatorInput, setEvaluatorInput] = useState("");
+
+      const subscriptionsRef = useRef([]);
+
+      // Initialize
+      useEffect(() => {
+        const storedEvaluatorId = localStorage.getItem("evaluatorId");
+        if (storedEvaluatorId) {
+          setEvaluatorId(storedEvaluatorId);
+          setEvaluatorName(localStorage.getItem("evaluatorName") || "");
+          setEvaluatorColour(localStorage.getItem("evaluatorColour") || "");
+        } else {
+          setShowEvaluatorModal(true);
+        }
+      }, []);
+
+      // Load data and subscribe to changes
+      useEffect(() => {
+        if (!evaluatorId) return;
+
+        const loadData = async () => {
+          try {
+            // Load evaluators
+            const { data: evalsData } = await sb.from("evaluators").select("*");
+            setEvaluators(evalsData || []);
+
+            // Load scores
+            const { data: scoresData } = await sb.from("vendor_scores").select("*");
+            const scoresMap = {};
+            (scoresData || []).forEach(score => {
+              const key = `${score.vendor_id}:${score.criterion_id}`;
+              if (!scoresMap[key]) scoresMap[key] = [];
+              scoresMap[key].push({ evaluator_id: score.evaluator_id, score: score.score });
+            });
+            setVendorScores(scoresMap);
+
+            // Load statuses
+            const { data: statusData } = await sb.from("vendor_statuses").select("*");
+            const statusMap = {};
+            (statusData || []).forEach(status => {
+              statusMap[status.vendor_id] = status.status;
+            });
+            setVendorStatuses(statusMap);
+
+            // Load POC progress
+            const { data: pocData } = await sb.from("poc_progress").select("*");
+            const pocMap = {};
+            (pocData || []).forEach(item => {
+              const key = `${item.vendor_id}:${item.category}:${item.item_index}`;
+              pocMap[key] = item.completed;
+            });
+            setPocProgress(pocMap);
+
+            // Load weights
+            const { data: weightsData } = await sb.from("criteria_weights").select("*");
+            const weightsMap = {};
+            if (weightsData && weightsData.length > 0) {
+              weightsData.forEach(w => {
+                weightsMap[w.criterion_id] = w.weight;
+              });
+            } else {
+              CRITERIA.forEach(c => {
+                weightsMap[c.id] = c.defaultWeight;
+              });
+            }
+            setWeights(weightsMap);
+          } catch (error) {
+            console.error("Error loading data:", error);
+          }
+        };
+
+        loadData();
+
+        // Subscribe to real-time changes
+        const setupSubscriptions = async () => {
+          const channel = sb.channel("*").on("postgres_changes", { event: "*", schema: "public", table: "evaluators" }, () => {
+            loadData();
+          }).on("postgres_changes", { event: "*", schema: "public", table: "vendor_scores" }, () => {
+            loadData();
+          }).on("postgres_changes", { event: "*", schema: "public", table: "vendor_statuses" }, () => {
+            loadData();
+          }).on("postgres_changes", { event: "*", schema: "public", table: "poc_progress" }, () => {
+            loadData();
+          }).on("postgres_changes", { event: "*", schema: "public", table: "criteria_weights" }, () => {
+            loadData();
+          }).subscribe();
+
+          subscriptionsRef.current.push(channel);
+        };
+
+        setupSubscriptions();
+
+        return () => {
+          subscriptionsRef.current.forEach(sub => {
+            sb.removeChannel(sub);
+          });
+        };
+      }, [evaluatorId]);
+
+      const createEvaluator = async () => {
+        if (!evaluatorInput.trim()) return;
+
+        const colours = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#DDA15E", "#BC6C25"];
+        const randomColour = colours[Math.floor(Math.random() * colours.length)];
+
+        try {
+          const { data, error } = await sb.from("evaluators").insert([
+            {
+              name: evaluatorInput,
+              colour: randomColour,
+            }
+          ]).select();
+
+          if (error) throw error;
+
+          const newEvaluatorId = data[0].id;
+          setEvaluatorId(newEvaluatorId);
+          setEvaluatorName(evaluatorInput);
+          setEvaluatorColour(randomColour);
+          localStorage.setItem("evaluatorId", newEvaluatorId);
+          localStorage.setItem("evaluatorName", evaluatorInput);
+          localStorage.setItem("evaluatorColour", randomColour);
+          setShowEvaluatorModal(false);
+          setEvaluatorInput("");
+        } catch (error) {
+          console.error("Error creating evaluator:", error);
+        }
+      };
+
+      const handleScoreUpdate = async (vendorId, criterionId, newScore) => {
+        try {
+          await sb.from("vendor_scores").upsert(
+            [{
+              evaluator_id: evaluatorId,
+              vendor_id: vendorId,
+              criterion_id: criterionId,
+              score: newScore,
+            }],
+            { onConflict: "evaluator_id,vendor_id,criterion_id" }
+          );
+        } catch (error) {
+          console.error("Error updating score:", error);
+        }
+      };
+
+      const handleStatusChange = async (vendorId) => {
+        const statuses = ["Longlist", "Shortlist", "Finalist"];
+        const currentStatus = vendorStatuses[vendorId] || "Longlist";
+        const currentIndex = statuses.indexOf(currentStatus);
+        const nextStatus = statuses[(currentIndex + 1) % statuses.length];
+
+        try {
+          await sb.from("vendor_statuses").upsert(
+            [{
+              vendor_id: vendorId,
+              status: nextStatus,
+              updated_by: evaluatorId,
+            }],
+            { onConflict: "vendor_id" }
+          );
+        } catch (error) {
+          console.error("Error updating status:", error);
+        }
+      };
+
+      const handleWeightChange = async (criterionId, newWeight) => {
+        setWeights(prev => ({ ...prev, [criterionId]: newWeight }));
+
+        try {
+          await sb.from("criteria_weights").upsert(
+            [{
+              criterion_id: criterionId,
+              weight: newWeight,
+              updated_by: evaluatorId,
+            }],
+            { onConflict: "criterion_id" }
+          );
+        } catch (error) {
+          console.error("Error updating weight:", error);
+        }
+      };
+
+      const handlePocToggle = async (vendorId, category, itemIndex) => {
+        const key = `${vendorId}:${category}:${itemIndex}`;
+        const currentState = pocProgress[key] || false;
+
+        try {
+          await sb.from("poc_progress").upsert(
+            [{
+              vendor_id: vendorId,
+              category: category,
+              item_index: itemIndex,
+              completed: !currentState,
+              updated_by: evaluatorId,
+            }],
+            { onConflict: "vendor_id,category,item_index" }
+          );
+        } catch (error) {
+          console.error("Error updating POC:", error);
+        }
+      };
+
+      const getConsensusScore = (vendorId, criterionId) => {
+        const key = `${vendorId}:${criterionId}`;
+        const vendorScoreList = vendorScores[key] || [];
+
+        if (vendorScoreList.length === 0) {
+          const vendor = VENDORS.find(v => v.id === vendorId);
+          return vendor.defaultScores[criterionId] || 5;
+        }
+
+        const sum = vendorScoreList.reduce((acc, s) => acc + s.score, 0);
+        return Math.round((sum / vendorScoreList.length) * 10) / 10;
+      };
+
+      const getEvaluatorCountForVendor = (vendorId) => {
+        const counts = {};
+        CRITERIA.forEach(crit => {
+          const key = `${vendorId}:${crit.id}`;
+          const vendorScoreList = vendorScores[key] || [];
+          counts[crit.id] = vendorScoreList.length;
+        });
+        const allCounts = Object.values(counts);
+        return Math.max(...allCounts, 0);
+      };
+
+      const getWeightedScore = (vendorId) => {
+        let totalScore = 0;
+        let totalWeight = 0;
+
+        CRITERIA.forEach(crit => {
+          const consensusScore = getConsensusScore(vendorId, crit.id);
+          const weight = weights[crit.id] || crit.defaultWeight;
+          totalScore += consensusScore * weight;
+          totalWeight += weight;
+        });
+
+        return totalWeight > 0 ? Math.round((totalScore / totalWeight) * 10) / 10 : 0;
+      };
+
+      const shortlistedVendors = VENDORS.filter(v => vendorStatuses[v.id] === "Shortlist").length;
+      const finalistVendors = VENDORS.filter(v => vendorStatuses[v.id] === "Finalist").length;
+
+      if (showEvaluatorModal) {
+        return (
+          <div className="modal-overlay">
+            <div className="modal">
+              <h2>Welcome to Vendor Assessment</h2>
+              <p>Please enter your name to start evaluating vendors.</p>
+              <input
+                type="text"
+                placeholder="Your name"
+                value={evaluatorInput}
+                onChange={(e) => setEvaluatorInput(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && createEvaluator()}
+              />
+              <button onClick={createEvaluator}>Start Evaluating</button>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div>
+          <div className="header">
+            <div className="header-left">
+              <div className="header-title">Vendor Assessment</div>
+              <div className="header-status">
+                GoConsumer Compliance Tool
+              </div>
+            </div>
+            <div className="evaluator-badge">
+              <div className="evaluator-dot" style={{ backgroundColor: evaluatorColour }}></div>
+              <span>Logged in as: {evaluatorName}</span>
+            </div>
+          </div>
+
+          <div className="tabs">
+            <button className={`tab ${activeTab === "dashboard" ? "active" : ""}`} onClick={() => setActiveTab("dashboard")}>Dashboard</button>
+            <button className={`tab ${activeTab === "desk-scan" ? "active" : ""}`} onClick={() => setActiveTab("desk-scan")}>Desk Scan</button>
+            <button className={`tab ${activeTab === "scoring" ? "active" : ""}`} onClick={() => setActiveTab("scoring")}>Scoring</button>
+            <button className={`tab ${activeTab === "compare" ? "active" : ""}`} onClick={() => setActiveTab("compare")}>Compare</button>
+            <button className={`tab ${activeTab === "poc" ? "active" : ""}`} onClick={() => setActiveTab("poc")}>POC Tracker</button>
+          </div>
+
+          <div className="container">
+            {activeTab === "dashboard" && (
+              <Dashboard
+                shortlistedVendors={shortlistedVendors}
+                finalistVendors={finalistVendors}
+                evaluators={evaluators}
+                vendorStatuses={vendorStatuses}
+                handleStatusChange={handleStatusChange}
+                getWeightedScore={getWeightedScore}
+              />
+            )}
+            {activeTab === "desk-scan" && (
+              <DeskScan />
+            )}
+            {activeTab === "scoring" && (
+              <Scoring
+                weights={weights}
+                handleWeightChange={handleWeightChange}
+                vendorScores={vendorScores}
+                getConsensusScore={getConsensusScore}
+                getEvaluatorCountForVendor={getEvaluatorCountForVendor}
+                handleScoreUpdate={handleScoreUpdate}
+                evaluatorId={evaluatorId}
+              />
+            )}
+            {activeTab === "compare" && (
+              <Compare
+                getConsensusScore={getConsensusScore}
+              />
+            )}
+            {activeTab === "poc" && (
+              <POCTracker
+                pocProgress={pocProgress}
+                handlePocToggle={handlePocToggle}
+                vendorStatuses={vendorStatuses}
+              />
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Dashboard Component
+    function Dashboard({ shortlistedVendors, finalistVendors, evaluators, vendorStatuses, handleStatusChange, getWeightedScore }) {
+      const longlistVendors = VENDORS.filter(v => vendorStatuses[v.id] !== "Shortlist" && vendorStatuses[v.id] !== "Finalist").length;
+      const shortlistVendors = VENDORS.filter(v => vendorStatuses[v.id] === "Shortlist").length;
+      const finalistVendorsCount = VENDORS.filter(v => vendorStatuses[v.id] === "Finalist").length;
+
+      const chartData = VENDORS.map(v => ({
+        name: v.name.substring(0, 10),
+        score: getWeightedScore(v.id),
+      })).sort((a, b) => b.score - a.score);
+
+      return (
+        <div>
+          <div className="kpi-strip">
+            <div className="kpi-card">
+              <div className="kpi-label">Total Vendors</div>
+              <div className="kpi-value">{VENDORS.length}</div>
+            </div>
+            <div className="kpi-card">
+              <div className="kpi-label">Shortlisted</div>
+              <div className="kpi-value">{shortlistVendors}</div>
+            </div>
+            <div className="kpi-card">
+              <div className="kpi-label">Finalists</div>
+              <div className="kpi-value">{finalistVendorsCount}</div>
+            </div>
+            <div className="kpi-card">
+              <div className="kpi-label">Evaluators Online</div>
+              <div className="kpi-value">{evaluators.length}</div>
+            </div>
+          </div>
+
+          <div className="pipeline-section">
+            <div className="section-title">Vendor Pipeline</div>
+            <div className="pipeline">
+              {["Longlist", "Shortlist", "Finalist"].map(stage => (
+                <div key={stage} className="pipeline-stage">
+                  <div className="stage-header">{stage}</div>
+                  <div className="stage-content">
+                    {VENDORS.filter(v => (vendorStatuses[v.id] || "Longlist") === stage).map(vendor => (
+                      <div
+                        key={vendor.id}
+                        className="vendor-pill"
+                        onClick={() => handleStatusChange(vendor.id)}
+                        style={{ backgroundColor: vendor.colour + "20", borderColor: vendor.colour }}
+                      >
+                        <div className="vendor-pill-label">{vendor.name}</div>
+                        <div className="vendor-pill-count">Click to move</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="pipeline-section">
+            <div className="section-title">Weighted Ranking</div>
+            <div className="chart-container">
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                  <XAxis dataKey="name" stroke="#94A3B8" />
+                  <YAxis stroke="#94A3B8" />
+                  <Tooltip
+                    contentStyle={{ background: "#1E293B", border: "1px solid #334155", borderRadius: "8px" }}
+                    labelStyle={{ color: "#E2E8F0" }}
+                  />
+                  <Bar dataKey="score" fill="#3B82F6" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Desk Scan Component
+    function DeskScan() {
+      return (
+        <div>
+          <div className="section-title" style={{ marginBottom: "24px" }}>Vendor Desk Scan Findings</div>
+          {VENDORS.map(vendor => (
+            <div key={vendor.id} className="vendor-card">
+              <div className="vendor-card-header">
+                <div>
+                  <div className="vendor-name">{vendor.name}</div>
+                  <div className="vendor-archetype">{vendor.archetype}</div>
+                </div>
+                <div className={`score-badge ${getScoreColor(SCAN_FINDINGS[vendor.id]?.pricing ? 7 : 5)}`}>
+                  {SCAN_FINDINGS[vendor.id]?.pricing || "N/A"}
+                </div>
+              </div>
+
+              {SCAN_FINDINGS[vendor.id] && (
+                <div>
+                  <div className="finding">
+                    <div className="finding-label">Integrations</div>
+                    <div className="finding-value">{SCAN_FINDINGS[vendor.id].integrations}</div>
+                  </div>
+                  <div className="finding">
+                    <div className="finding-label">Frameworks</div>
+                    <div className="finding-value">{SCAN_FINDINGS[vendor.id].frameworks}</div>
+                  </div>
+                  <div className="finding">
+                    <div className="finding-label">Evidence Approach</div>
+                    <div className="finding-value">{SCAN_FINDINGS[vendor.id].evidenceApproach}</div>
+                  </div>
+
+                  <div className="finding">
+                    <div className="finding-label">Strengths</div>
+                    <div className="finding-value">
+                      <ul style={{ marginLeft: "20px", color: "#86EFAC" }}>
+                        {SCAN_FINDINGS[vendor.id].strengths.map((s, i) => (
+                          <li key={i}>{s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="finding">
+                    <div className="finding-label">Gaps</div>
+                    <div className="finding-value">
+                      <ul style={{ marginLeft: "20px", color: "#FCA5A5" }}>
+                        {SCAN_FINDINGS[vendor.id].gaps.map((g, i) => (
+                          <li key={i}>{g}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="verdict">
+                    <strong>Verdict:</strong> {SCAN_FINDINGS[vendor.id].verdict}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // Scoring Component
+    function Scoring({ weights, handleWeightChange, vendorScores, getConsensusScore, getEvaluatorCountForVendor, handleScoreUpdate, evaluatorId }) {
+      const [editingCell, setEditingCell] = useState(null);
+      const [editScore, setEditScore] = useState(null);
+
+      return (
+        <div className="scoring-layout">
+          <div className="weight-panel">
+            <div className="section-title" style={{ marginBottom: "20px", fontSize: "14px" }}>Weights</div>
+            {CRITERIA.map(crit => (
+              <div key={crit.id} className="weight-item">
+                <div className="weight-label">
+                  <span>{crit.short}</span>
+                  <span>{weights[crit.id] || crit.defaultWeight}</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="50"
+                  value={weights[crit.id] || crit.defaultWeight}
+                  onChange={(e) => handleWeightChange(crit.id, parseInt(e.target.value))}
+                  className="weight-input"
+                />
+              </div>
+            ))}
+          </div>
+
+          <div>
+            <div className="score-matrix">
+              <div className="matrix-header">
+                <div className="matrix-header-cell" style={{ flex: "0 0 150px" }}>Vendor</div>
+                {CRITERIA.map(crit => (
+                  <div key={crit.id} className="matrix-header-cell">{crit.short}</div>
+                ))}
+              </div>
+
+              {VENDORS.map(vendor => (
+                <div key={vendor.id} className="matrix-row">
+                  <div className="matrix-row-label">
+                    {vendor.name}
+                    <div className="row-label-count">{getEvaluatorCountForVendor(vendor.id)} evaluators</div>
+                  </div>
+                  {CRITERIA.map(crit => {
+                    const consensusScore = getConsensusScore(vendor.id, crit.id);
+                    return (
+                      <div
+                        key={`${vendor.id}-${crit.id}`}
+                        className="matrix-cell"
+                        onClick={() => setEditingCell(`${vendor.id}:${crit.id}`)}
+                        style={{ background: getScoreBgColor(consensusScore) }}
+                      >
+                        <div className="matrix-cell-content">
+                          <div className="consensus-score" style={{ color: getScoreFgColor(consensusScore) }}>
+                            {consensusScore.toFixed(1)}
+                          </div>
+                          <div className="evaluator-count">({getEvaluatorCountForVendor(vendor.id)})</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+
+            {editingCell && (
+              <ScoreEditModal
+                editingCell={editingCell}
+                editScore={editScore}
+                setEditScore={setEditScore}
+                onSave={(vendorId, criterionId, score) => {
+                  handleScoreUpdate(vendorId, criterionId, score);
+                  setEditingCell(null);
+                  setEditScore(null);
+                }}
+                onCancel={() => {
+                  setEditingCell(null);
+                  setEditScore(null);
+                }}
+                getConsensusScore={getConsensusScore}
+              />
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Score Edit Modal
+    function ScoreEditModal({ editingCell, editScore, setEditScore, onSave, onCancel, getConsensusScore }) {
+      const [vendorId, criterionId] = editingCell.split(":");
+      const vendor = VENDORS.find(v => v.id === vendorId);
+      const criterion = CRITERIA.find(c => c.id === criterionId);
+      const consensusScore = getConsensusScore(vendorId, criterionId);
+
+      const initialScore = editScore !== null ? editScore : Math.round(consensusScore);
+
+      return (
+        <div className="modal-overlay" onClick={onCancel}>
+          <div className="score-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>{vendor.name} - {criterion.label}</h3>
+            <div className="score-slider">
+              <div className="score-slider-label">
+                <span>Your Score</span>
+                <span style={{ color: getScoreFgColor(initialScore), fontSize: "16px", fontWeight: "600" }}>
+                  {initialScore}
+                </span>
+              </div>
+              <input
+                type="range"
+                min="1"
+                max="10"
+                value={initialScore}
+                onChange={(e) => setEditScore(parseInt(e.target.value))}
+                className="score-slider-input"
+              />
+            </div>
+
+            <div style={{ marginBottom: "20px", padding: "12px", background: "#0F172A", borderRadius: "6px", color: "#94A3B8", fontSize: "12px" }}>
+              <div>Consensus Score: <strong style={{ color: "#E2E8F0" }}>{consensusScore.toFixed(1)}</strong></div>
+            </div>
+
+            <div className="score-modal-buttons">
+              <button className="save" onClick={() => onSave(vendorId, criterionId, initialScore)}>Save Score</button>
+              <button className="cancel" onClick={onCancel}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Compare Component
+    function Compare({ getConsensusScore }) {
+      const [selectedVendors, setSelectedVendors] = useState([VENDORS[0].id, VENDORS[1].id]);
+
+      const radarData = CRITERIA.map(crit => {
+        const data = { criterion: crit.short };
+        selectedVendors.forEach((vendorId, idx) => {
+          data[`vendor${idx}`] = getConsensusScore(vendorId, crit.id);
+        });
+        return data;
       });
+
+      return (
+        <div className="compare-layout">
+          <div className="vendor-selector">
+            <div className="section-title" style={{ fontSize: "13px", marginBottom: "12px" }}>Select Vendors</div>
+            {VENDORS.map(vendor => (
+              <div
+                key={vendor.id}
+                className={`vendor-selector-item ${selectedVendors.includes(vendor.id) ? "active" : ""}`}
+                onClick={() => {
+                  if (selectedVendors.includes(vendor.id)) {
+                    setSelectedVendors(selectedVendors.filter(id => id !== vendor.id));
+                  } else if (selectedVendors.length < 2) {
+                    setSelectedVendors([...selectedVendors, vendor.id]);
+                  }
+                }}
+                style={{ backgroundColor: selectedVendors.includes(vendor.id) ? vendor.colour : "transparent", borderColor: vendor.colour }}
+              >
+                {vendor.name}
+              </div>
+            ))}
+          </div>
+
+          <div>
+            {selectedVendors.length === 2 && (
+              <div>
+                <div className="comparison-chart">
+                  <ResponsiveContainer width="100%" height={500}>
+                    <RadarChart data={radarData}>
+                      <PolarGrid stroke="#334155" />
+                      <PolarAngleAxis dataKey="criterion" stroke="#94A3B8" />
+                      <PolarRadiusAxis stroke="#94A3B8" />
+                      <Radar name={VENDORS.find(v => v.id === selectedVendors[0]).name} dataKey="vendor0" stroke={VENDORS.find(v => v.id === selectedVendors[0]).colour} fill={VENDORS.find(v => v.id === selectedVendors[0]).colour} fillOpacity={0.3} />
+                      <Radar name={VENDORS.find(v => v.id === selectedVendors[1]).name} dataKey="vendor1" stroke={VENDORS.find(v => v.id === selectedVendors[1]).colour} fill={VENDORS.find(v => v.id === selectedVendors[1]).colour} fillOpacity={0.3} />
+                      <Legend />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginTop: "24px" }}>
+                  {selectedVendors.map((vendorId, idx) => {
+                    const vendor = VENDORS.find(v => v.id === vendorId);
+                    return (
+                      <div key={vendorId} className="chart-container">
+                        <div style={{ marginBottom: "16px" }}>
+                          <div className="vendor-name">{vendor.name}</div>
+                          <div className="vendor-archetype">{vendor.archetype}</div>
+                        </div>
+                        {CRITERIA.map(crit => {
+                          const score = getConsensusScore(vendorId, crit.id);
+                          return (
+                            <div key={crit.id} style={{ marginBottom: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <div style={{ fontSize: "13px", color: "#94A3B8" }}>{crit.short}</div>
+                              <div className={`score-badge ${getScoreColor(score)}`} style={{ padding: "4px 8px", fontSize: "11px" }}>
+                                {score.toFixed(1)}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {selectedVendors.length < 2 && (
+              <div className="no-data">Select 2 vendors to compare</div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // POC Tracker Component
+    function POCTracker({ pocProgress, handlePocToggle, vendorStatuses }) {
+      const shortlistedVendors = VENDORS.filter(v => vendorStatuses[v.id] === "Shortlist");
+
+      if (shortlistedVendors.length === 0) {
+        return <div className="no-data">No shortlisted vendors yet. Move vendors to Shortlist in the Dashboard.</div>;
+      }
+
+      return (
+        <div className="poc-layout">
+          {shortlistedVendors.map(vendor => (
+            <div key={vendor.id} className="poc-card">
+              <div className="poc-card-header">
+                <div className="poc-color-dot" style={{ backgroundColor: vendor.colour }}></div>
+                {vendor.name}
+              </div>
+
+              <div className="poc-category">Connectors</div>
+              {POC_CONNECTORS.map((item, idx) => {
+                const key = `${vendor.id}:connectors:${idx}`;
+                const isChecked = pocProgress[key] || false;
+                return (
+                  <div
+                    key={idx}
+                    className={`poc-item ${isChecked ? "checked" : ""}`}
+                    onClick={() => handlePocToggle(vendor.id, "connectors", idx)}
+                  >
+                    <div className="poc-checkbox">
+                      {isChecked && <span style={{ color: "white", fontSize: "12px" }}>✓</span>}
+                    </div>
+                    <div className="poc-item-label">{item}</div>
+                  </div>
+                );
+              })}
+
+              <div className="poc-category">Controls</div>
+              {POC_CONTROLS.map((item, idx) => {
+                const key = `${vendor.id}:controls:${idx}`;
+                const isChecked = pocProgress[key] || false;
+                return (
+                  <div
+                    key={idx}
+                    className={`poc-item ${isChecked ? "checked" : ""}`}
+                    onClick={() => handlePocToggle(vendor.id, "controls", idx)}
+                  >
+                    <div className="poc-checkbox">
+                      {isChecked && <span style={{ color: "white", fontSize: "12px" }}>✓</span>}
+                    </div>
+                    <div className="poc-item-label">{item}</div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // Render App
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
   </script>
 </body>
 </html>
