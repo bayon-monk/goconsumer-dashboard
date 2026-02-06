@@ -820,17 +820,77 @@
   <script>if(!window.React) showErr('FAIL: React not loaded');</script>
   <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script>if(!window.ReactDOM) showErr('FAIL: ReactDOM not loaded');</script>
-  <script crossorigin src="https://unpkg.com/react-is@18.2.0/umd/react-is.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
   <script>if(!window.Babel) showErr('FAIL: Babel not loaded');</script>
-  <script src="https://unpkg.com/recharts@2.4.3/umd/Recharts.min.js"></script>
-  <script>if(!window.Recharts) showErr('FAIL: Recharts not loaded (window.Recharts=' + typeof window.Recharts + ')');</script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>if(!window.supabase) showErr('FAIL: Supabase not loaded (window.supabase=' + typeof window.supabase + ')');</script>
 
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
-    const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } = Recharts;
+
+    // CSS Bar Chart component (replaces Recharts BarChart)
+    function CSSBarChart({ data }) {
+      const maxScore = Math.max(...data.map(d => d.score), 1);
+      return (
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "16px 0" }}>
+          {data.map((item, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div style={{ width: "90px", fontSize: "12px", color: "#94A3B8", textAlign: "right", flexShrink: 0 }}>{item.name}</div>
+              <div style={{ flex: 1, background: "#0F172A", borderRadius: "6px", height: "28px", position: "relative", overflow: "hidden" }}>
+                <div style={{ width: (item.score / 10 * 100) + "%", height: "100%", background: "linear-gradient(90deg, #3B82F6, #60A5FA)", borderRadius: "6px", transition: "width 0.5s ease" }} />
+              </div>
+              <div style={{ width: "45px", fontSize: "14px", fontWeight: 700, color: "#F1F5F9", textAlign: "right" }}>{item.score.toFixed(1)}</div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // SVG Radar Chart component (replaces Recharts RadarChart)
+    function SVGRadarChart({ data, vendors }) {
+      const cx = 200, cy = 200, maxR = 150;
+      const n = data.length;
+      const angleSlice = (2 * Math.PI) / n;
+      const levels = [2, 4, 6, 8, 10];
+
+      const getPoint = (value, index) => {
+        const angle = angleSlice * index - Math.PI / 2;
+        const r = (value / 10) * maxR;
+        return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
+      };
+
+      const makePolygon = (key) =>
+        data.map((d, i) => getPoint(d[key] || 0, i)).map(p => p.x + "," + p.y).join(" ");
+
+      return (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <svg viewBox="0 0 400 400" style={{ width: "100%", maxWidth: "500px" }}>
+            {levels.map(level => {
+              const pts = Array.from({ length: n }, (_, i) => getPoint(level, i));
+              return <polygon key={level} points={pts.map(p => p.x + "," + p.y).join(" ")} fill="none" stroke="#334155" strokeWidth="1" />;
+            })}
+            {data.map((_, i) => {
+              const p = getPoint(10, i);
+              return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="#334155" strokeWidth="1" />;
+            })}
+            {data.map((d, i) => {
+              const p = getPoint(11, i);
+              return <text key={i} x={p.x} y={p.y} fill="#94A3B8" fontSize="11" textAnchor="middle" dominantBaseline="middle">{d.criterion}</text>;
+            })}
+            {vendors[0] && <polygon points={makePolygon("vendor0")} fill={vendors[0].colour + "40"} stroke={vendors[0].colour} strokeWidth="2" />}
+            {vendors[1] && <polygon points={makePolygon("vendor1")} fill={vendors[1].colour + "40"} stroke={vendors[1].colour} strokeWidth="2" />}
+          </svg>
+          <div style={{ display: "flex", gap: "24px", marginTop: "12px" }}>
+            {vendors.map((v, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <div style={{ width: "12px", height: "12px", borderRadius: "50%", background: v.colour }} />
+                <span style={{ color: "#94A3B8", fontSize: "13px" }}>{v.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
 
     // Constants
     const CRITERIA = [
@@ -1392,18 +1452,7 @@
           <div className="pipeline-section">
             <div className="section-title">Weighted Ranking</div>
             <div className="chart-container">
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis dataKey="name" stroke="#94A3B8" />
-                  <YAxis stroke="#94A3B8" />
-                  <Tooltip
-                    contentStyle={{ background: "#1E293B", border: "1px solid #334155", borderRadius: "8px" }}
-                    labelStyle={{ color: "#E2E8F0" }}
-                  />
-                  <Bar dataKey="score" fill="#3B82F6" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <CSSBarChart data={chartData} />
             </div>
           </div>
         </div>
@@ -1642,16 +1691,10 @@
             {selectedVendors.length === 2 && (
               <div>
                 <div className="comparison-chart">
-                  <ResponsiveContainer width="100%" height={500}>
-                    <RadarChart data={radarData}>
-                      <PolarGrid stroke="#334155" />
-                      <PolarAngleAxis dataKey="criterion" stroke="#94A3B8" />
-                      <PolarRadiusAxis stroke="#94A3B8" />
-                      <Radar name={VENDORS.find(v => v.id === selectedVendors[0]).name} dataKey="vendor0" stroke={VENDORS.find(v => v.id === selectedVendors[0]).colour} fill={VENDORS.find(v => v.id === selectedVendors[0]).colour} fillOpacity={0.3} />
-                      <Radar name={VENDORS.find(v => v.id === selectedVendors[1]).name} dataKey="vendor1" stroke={VENDORS.find(v => v.id === selectedVendors[1]).colour} fill={VENDORS.find(v => v.id === selectedVendors[1]).colour} fillOpacity={0.3} />
-                      <Legend />
-                    </RadarChart>
-                  </ResponsiveContainer>
+                  <SVGRadarChart
+                    data={radarData}
+                    vendors={selectedVendors.map(id => VENDORS.find(v => v.id === id))}
+                  />
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginTop: "24px" }}>
